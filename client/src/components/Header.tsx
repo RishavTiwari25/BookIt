@@ -19,15 +19,15 @@ export default function Header() {
     if (!q) {
       navigate('/')
     } else {
-      const url = `/?q=${encodeURIComponent(q)}`
-      navigate(url)
+      navigate(`/?q=${encodeURIComponent(q)}`)
     }
   }
+
   return (
     <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
         <a href="/" className="font-extrabold text-xl tracking-tight text-primary">BookIt</a>
-        <form onSubmit={onSubmit} className="ml-auto flex w-full max-w-xl items-stretch">
+        <form onSubmit={onSubmit} className="sm:ml-auto flex w-full sm:max-w-xl items-stretch">
           <label htmlFor="site-search" className="sr-only">Search experiences</label>
           <input
             id="site-search"
