@@ -2,8 +2,12 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
-import { prisma } from "./prisma.js";
-import type { Prisma } from "@prisma/client";
+import { connectMongo } from "./db.js";
+import { Experience } from "./models/Experience.js";
+import { Slot } from "./models/Slot.js";
+import { PromoCode } from "./models/PromoCode.js";
+import { Booking } from "./models/Booking.js";
+import { nextSequence } from "./models/Counter.js";
 
 dotenv.config();
 
@@ -15,28 +19,11 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 
-// Ensure DB has expected columns when running in dev with SQLite
-async function ensureSchema() {
-  try {
-    // Check if quantity column exists in Booking table
-    const cols = (await prisma.$queryRawUnsafe(`PRAGMA table_info("Booking");`)) as any[];
-    const hasQuantity = Array.isArray(cols) && cols.some((c: any) => c.name === 'quantity');
-    const hasContactPhone = Array.isArray(cols) && cols.some((c: any) => c.name === 'contactPhone');
-    const hasPassengers = Array.isArray(cols) && cols.some((c: any) => c.name === 'passengers');
-    if (!hasQuantity) {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Booking" ADD COLUMN "quantity" INTEGER NOT NULL DEFAULT 1;`);
-      // no need to backfill since default applies
-    }
-    if (!hasContactPhone) {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Booking" ADD COLUMN "contactPhone" TEXT;`);
-    }
-    if (!hasPassengers) {
-      await prisma.$executeRawUnsafe(`ALTER TABLE "Booking" ADD COLUMN "passengers" TEXT;`);
-    }
-  } catch (e) {
-    console.warn('ensureSchema skipped:', e);
-  }
-}
+// Loosen Mongoose model typings to avoid generic overload incompatibilities in TS
+const ExperienceModel: any = Experience as any;
+const SlotModel: any = Slot as any;
+const PromoCodeModel: any = PromoCode as any;
+const BookingModel: any = Booking as any;
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
@@ -45,9 +32,15 @@ app.get("/health", (_req, res) => {
 // GET /experiences
 app.get("/experiences", async (_req, res) => {
   try {
-    const experiences = await prisma.experience.findMany({
-      orderBy: { id: "asc" },
-    });
+    const docs = await ExperienceModel.find({}).sort({ id: 1 }).lean();
+    const experiences = docs.map((d: any) => ({
+      id: d.id,
+      title: d.title,
+      description: d.description ?? "",
+      location: d.location,
+      pricePerPerson: d.pricePerPerson,
+      imageUrl: d.imageUrl ?? "",
+    }));
     res.json(experiences);
   } catch (err) {
     console.error(err);
@@ -60,12 +53,26 @@ app.get("/experiences/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid id" });
   try {
-    const experience = await prisma.experience.findUnique({
-      where: { id },
-      include: { slots: { orderBy: { startTime: "asc" } } },
-    });
-    if (!experience) return res.status(404).json({ error: "Not found" });
-    res.json(experience);
+    const exp = await ExperienceModel.findOne({ id }).lean();
+    if (!exp) return res.status(404).json({ error: "Not found" });
+  const slots = await SlotModel.find({ experienceId: id }).sort({ startTime: 1 }).lean();
+    const payload = {
+      id: exp.id,
+      title: exp.title,
+      description: exp.description ?? "",
+      location: exp.location,
+      pricePerPerson: exp.pricePerPerson,
+      imageUrl: exp.imageUrl ?? "",
+      slots: slots.map((s: any) => ({
+        id: s.id,
+        experienceId: s.experienceId,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        totalSpots: s.totalSpots,
+        availableSpots: s.availableSpots,
+      })),
+    };
+    res.json(payload);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch experience" });
@@ -78,7 +85,7 @@ app.post("/promo/validate", async (req, res) => {
   const code = codeRaw.trim().toUpperCase();
   if (!code) return res.status(400).json({ error: "Code required" });
   try {
-    const promo = await prisma.promoCode.findUnique({ where: { code } });
+    const promo = await PromoCodeModel.findOne({ code }).lean();
     if (!promo || !promo.active) return res.json({ valid: false });
     res.json({
       valid: true,
@@ -126,57 +133,51 @@ app.post("/bookings", async (req, res) => {
   }
 
   try {
-  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Get slot and experience price
-      const slot = await tx.slot.findUnique({
-        where: { id: slotId },
-        include: { experience: true },
-      });
-      if (!slot) throw new Error("SLOT_NOT_FOUND");
+    // Find the slot
+  const slot = await SlotModel.findOne({ id: slotId }).lean();
+    if (!slot) throw new Error("SLOT_NOT_FOUND");
 
-      // Decrement availableSpots atomically only if > 0
-      const updated = await tx.$queryRaw<{ availableSpots: number }[]>`
-        UPDATE "Slot"
-        SET "availableSpots" = "availableSpots" - ${peopleCount}
-        WHERE "id" = ${slotId} AND "availableSpots" >= ${peopleCount}
-        RETURNING "availableSpots";
-      `;
-      if (updated.length === 0) {
-        throw new Error("SOLD_OUT");
-      }
+    // Atomically decrement availableSpots if enough seats
+  const updated = await SlotModel.findOneAndUpdate(
+      { id: slotId, availableSpots: { $gte: peopleCount } },
+      { $inc: { availableSpots: -peopleCount } },
+      { new: true }
+    ).lean();
+    if (!updated) throw new Error("SOLD_OUT");
 
-      // Apply promo if provided
-      let finalPrice = slot.experience.pricePerPerson.times(peopleCount);
-      let promoCodeUsed: string | null = null;
-      if (promoCode) {
-        const code = await tx.promoCode.findUnique({ where: { code: promoCode.toUpperCase() } });
-        if (code && code.active) {
-          promoCodeUsed = code.code;
-          if (code.discountType === "PERCENT") {
-            finalPrice = finalPrice.minus(finalPrice.times(code.value).dividedBy(100));
-          } else {
-            finalPrice = finalPrice.minus(code.value);
-          }
-          if (finalPrice.lessThan(0)) finalPrice = new (finalPrice.constructor as any)(0);
+    // Load experience to compute price
+  const exp = await ExperienceModel.findOne({ id: slot.experienceId }).lean();
+    if (!exp) throw new Error("SLOT_NOT_FOUND");
+
+    let finalPrice = exp.pricePerPerson * peopleCount;
+    let promoCodeUsed: string | null = null;
+    if (promoCode) {
+  const code = await PromoCodeModel.findOne({ code: promoCode.toUpperCase() }).lean();
+      if (code && code.active) {
+        promoCodeUsed = code.code;
+        if (code.discountType === 'PERCENT') {
+          finalPrice = finalPrice - (finalPrice * code.value) / 100;
+        } else {
+          finalPrice = finalPrice - code.value;
         }
+        if (finalPrice < 0) finalPrice = 0;
       }
+    }
 
-      const booking = await tx.booking.create({
-        data: {
-          slotId,
-          userName,
-          userEmail,
-          promoCodeUsed,
-          quantity: peopleCount,
-          contactPhone: contactPhone ?? null,
-          passengers: passengers ?? null,
-          finalPrice,
-        },
-      });
-
-      return { bookingId: booking.id, slotId, userName, userEmail, contactPhone: contactPhone ?? null, promoCodeUsed, quantity: peopleCount, passengers: passengers ?? null, finalPrice };
+    const bookingId = await nextSequence('booking');
+  await BookingModel.create({
+      id: bookingId,
+      slotId,
+      userName,
+      userEmail,
+      promoCodeUsed,
+      quantity: peopleCount,
+      contactPhone: contactPhone ?? null,
+      passengers: passengers ?? null,
+      finalPrice,
     });
 
+    const result = { bookingId, slotId, userName, userEmail, contactPhone: contactPhone ?? null, promoCodeUsed, quantity: peopleCount, passengers: passengers ?? null, finalPrice };
     res.status(201).json({ success: true, ...result });
   } catch (err: any) {
     if (err instanceof Error) {
@@ -188,7 +189,7 @@ app.post("/bookings", async (req, res) => {
   }
 });
 
-ensureSchema().finally(() => {
+connectMongo().then(() => {
   // Serve built client if available (production preview) from ../client/dist
   try {
     const clientDist = path.resolve(process.cwd(), "..", "client", "dist");
@@ -204,4 +205,7 @@ ensureSchema().finally(() => {
   app.listen(PORT, HOST as any, () => {
     console.log(`BookIt API running on http://${HOST}:${PORT}`);
   });
+}).catch((e) => {
+  console.error('Failed to connect to MongoDB:', e);
+  process.exit(1);
 });
