@@ -10,11 +10,11 @@ End-to-end demo app where users explore travel experiences, pick slots, and comp
 ## Stack
 
 - Frontend: React + TypeScript + Vite, TailwindCSS, React Router, Axios
-- Backend: Node.js + Express (ESM), TypeScript, Prisma ORM, PostgreSQL
+- Backend: Node.js + Express (ESM), TypeScript, Mongoose, MongoDB
 
 ## Local setup
 
-Prereqs: Node 18+, PostgreSQL 14+, pnpm or npm.
+Prereqs: Node 18+, MongoDB (local or Atlas), pnpm or npm.
 
 1. Clone and install
 
@@ -26,19 +26,19 @@ cd client; npm install; cd ..
 
 2. Configure database
 
-Create a Postgres database (local or cloud) and set the connection string in `server/.env`:
+Create a MongoDB database (local or Atlas) and set the connection string in `server/.env`:
 
 ```env
 PORT=4000
+HOST=127.0.0.1
 CORS_ORIGIN=http://localhost:5173
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/bookit?schema=public"
+MONGODB_URI="mongodb://127.0.0.1:27017/bookit"
 ```
 
-3. Migrate and seed
+3. Seed data
 
 ```powershell
 # from server/
-npx prisma migrate dev --name init
 npm run seed
 ```
 
@@ -66,11 +66,11 @@ Open http://localhost:5173 and test the flow:
 
 ## Deployment
 
-- Backend: Render or Railway (Node + Postgres). Set envs and run `prisma migrate deploy` then `npm run seed` once.
+- Backend: Render or Railway (Node + MongoDB). Set envs and run `npm run seed` once.
 - Frontend: Vercel (Vite). Set `VITE_API_BASE_URL` to your backend URL.
 
 ## Notes
 
-- Atomic sold-out check uses a conditional UPDATE … RETURNING to prevent double-booking.
-- Prices are stored as Decimal in DB; frontend handles display to two decimals.
+- Atomic sold-out check uses a single conditional findOneAndUpdate with $inc to prevent double-booking.
+- Prices are stored as numbers; frontend handles display to two decimals.
 - The Tailwind theme is minimal; tune colors/fonts to match Figma exactly in `client/tailwind.config.js`.

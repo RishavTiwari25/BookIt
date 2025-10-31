@@ -194,8 +194,8 @@ connectMongo().then(() => {
   try {
     const clientDist = path.resolve(process.cwd(), "..", "client", "dist");
     app.use(express.static(clientDist));
-    // SPA fallback: let client router handle non-API routes
-    app.get(["/", "/experiences", "/experiences/:id", "/checkout", "/booking-result"], (_req, res) => {
+    // SPA fallback: let client router handle non-API routes (include legacy /details/:id)
+    app.get(["/", "/experiences", "/experiences/:id", "/details/:id", "/checkout", "/booking-result"], (_req, res) => {
       res.sendFile(path.join(clientDist, "index.html"));
     });
   } catch (e) {

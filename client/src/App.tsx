@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import Home from './pages/Home.tsx'
 import Details from './pages/Details.tsx'
 import Checkout from './pages/Checkout.tsx'
@@ -16,6 +16,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/experiences" element={<Home />} />
             <Route path="/experiences/:id" element={<Details />} />
+            {/* Backward-compat: redirect old /details/:id to /experiences/:id */}
+            <Route path="/details/:id" element={<LegacyDetailsRedirect />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/booking-result" element={<Result />} />
           </Routes>
@@ -23,4 +25,9 @@ export default function App() {
       </div>
     </BrowserRouter>
   )
+}
+
+function LegacyDetailsRedirect() {
+  const { id } = useParams()
+  return <Navigate to={`/experiences/${id ?? ''}`} replace />
 }
