@@ -19,7 +19,7 @@ const urlOverrides: Record<number, string> = {
   // Udaipur - lake
   9: 'https://imgs.search.brave.com/dLhdf6OHNMIk8RmCmmXhinyojShEvXBsApz05FK4Hao/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMjE5/NTcxMTU4NS9waG90/by91ZGFpcHVyLmpw/Zz9zPTYxMng2MTIm/dz0wJms9MjAmYz1o/ZEVia085QUtiSFhR/TmJpZmVDVmdiRmpn/azVSeXN5U01zaHVr/b0VQRDlNPQ',
   // Amritsar - Golden temple
- 10: 'https://imgs.search.brave.com/dLhdf6OHNMIk8RmCmmXhinyojShEvXBsApz05FK4Hao/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMjE5/NTcxMTU4NS9waG90/by91ZGFpcHVyLmpw/Zz9zPTYxMng2MTIm/dz0wJms9MjAmYz1o/ZEVia085QUtiSFhR/TmJpZmVDVmdiRmpn/azVSeXN5U01zaHVr/b0VQRDlNPQ',
+ 10: 'https://imgs.search.brave.com/FvY7eZGeQj4-fk-GXaY3iXpsDx66ye9Sv3WlFAEWi6M/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvNTIx/OTMzMjYwL3Bob3Rv/L2hhcm1hbmRpci1z/YWhpYi10ZW1wbGUt/aW4tYW1yaXRzYXIt/aW5kaWEuanBnP3M9/NjEyeDYxMiZ3PTAm/az0yMCZjPU1EYjZB/YlhLYmxtck5iWmJT/aWxLbGZoRlVnaXNi/WWxObExCRy1ITVZD/RDA9',
 }
 
 // Prefer remote URL if provided; else local curated image for known IDs; else fallback
