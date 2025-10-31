@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api, type Experience, type Slot } from '../lib/api'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { formatINR } from '../lib/currency'
-import { getExperienceImage, getLocalImage, fallbackImg } from '../lib/images'
+import { getExperienceImage, fallbackImg } from '../lib/images'
 // Removed extra informational sections and attraction strip to simplify per request
 
 export default function Details() {
@@ -60,8 +60,8 @@ export default function Details() {
             className="h-full w-full object-cover animate-pan-x"
             onError={(e) => {
               const img = e.currentTarget as HTMLImageElement
-              const local = getLocalImage(exp.id)
-              if (local && img.src !== local) { img.src = local; return }
+              // const local = getLocalImage(exp.id)
+              // if (local && img.src !== local) { img.src = local; return }
               if (img.src !== fallbackImg) { img.onerror = null; img.src = fallbackImg }
             }}
             loading="lazy"

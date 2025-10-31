@@ -2,7 +2,7 @@ import fallbackImg from '../assets/fallback.svg'
 
 // Local-by-ID map removed to avoid asset resolution issues; we use
 // explicit remote URL overrides where provided, else fallback.
-const byId: Record<number, string> = {}
+// const byId: Record<number, string> = {}
 
 // External image overrides provided by user for specific destinations
 const urlOverrides: Record<number, string> = {
@@ -27,8 +27,8 @@ export function getExperienceImage(id?: number, remoteUrl?: string) {
   return (id && urlOverrides[id]) || remoteUrl || fallbackImg
 }
 
-export function getLocalImage(id?: number) {
-  return undefined
-}
+// export function getLocalImage(id?: number) {
+//   return undefined
+// }
 
 export { fallbackImg }
