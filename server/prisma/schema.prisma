@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./prisma/dev.db"
+}
+
+model Experience {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String
+  location        String
+  pricePerPerson  Decimal
+  imageUrl        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  slots           Slot[]
+}
+
+model Slot {
+  id              Int       @id @default(autoincrement())
+  experienceId    Int
+  startTime       DateTime
+  endTime         DateTime
+  totalSpots      Int
+  availableSpots  Int
+  createdAt       DateTime  @default(now())
+
+  experience      Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  bookings        Booking[]
+
+  @@index([experienceId])
+}
+
+model Booking {
+  id             Int       @id @default(autoincrement())
+  slotId         Int
+  userName       String
+  userEmail      String
+  contactPhone   String?
+  promoCodeUsed  String?   // store code for auditing
+  quantity       Int       @default(1)
+  passengers     Json?
+  finalPrice     Decimal
+  bookingTime    DateTime  @default(now())
+
+  slot           Slot      @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@index([slotId])
+}
+
+model PromoCode {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique
+  discountType DiscountType
+  value        Int      // percent (e.g., 10) or flat amount in currency units (e.g., 100)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
+}

@@ -1,0 +1,9 @@
+:root {
+  /* Default theme (can be overridden to match screenshots) */
+  --color-primary: 30 64 175;   /* #1E40AF */
+  --color-secondary: 245 158 11;/* #F59E0B */
+  --color-muted: 107 114 128;   /* #6B7280 */
+  --color-bg: 11 11 12;         /* #0B0B0C */
+}
+
+/* Optional: light/dark scopes or brand variants can be added later */

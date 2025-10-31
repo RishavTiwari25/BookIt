@@ -1,0 +1,22 @@
+@import './styles/theme.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+
+/* Custom animations */
+@keyframes pan-x {
+	0% { transform: scale(1.05) translateX(0%); }
+	100% { transform: scale(1.05) translateX(4%); }
+}
+
+@keyframes marquee-left {
+	0% { transform: translateX(0); }
+	100% { transform: translateX(-50%); }
+}
+
+@layer utilities {
+	.animate-pan-x { animation: pan-x 14s ease-in-out infinite alternate; }
+	.animate-marquee { animation: marquee-left 30s linear infinite; }
+}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Kerala">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#86efac"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g)"/>
+  <g fill="#15803d" opacity="0.5">
+    <circle cx="320" cy="180" r="120"/>
+    <circle cx="880" cy="620" r="160"/>
+  </g>
+  <g fill="#166534">
+    <path d="M200 560c140-40 220-20 300 0s220 40 500-20v40H200z"/>
+  </g>
+  <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, Arial" font-size="48" fill="#064e3b">Kerala</text>
+</svg>
