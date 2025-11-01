@@ -26,7 +26,8 @@ const PromoCodeModel: any = PromoCode as any;
 const BookingModel: any = Booking as any;
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, time: new Date().toISOString() });
+  const dbReady = (require("mongoose") as typeof import("mongoose")).connection.readyState === 1;
+  res.json({ ok: true, dbConnected: dbReady, time: new Date().toISOString() });
 });
 
 // GET /experiences

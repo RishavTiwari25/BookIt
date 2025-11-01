@@ -21,7 +21,8 @@ const SlotModel = Slot;
 const PromoCodeModel = PromoCode;
 const BookingModel = Booking;
 app.get("/health", (_req, res) => {
-    res.json({ ok: true, time: new Date().toISOString() });
+    const dbReady = require("mongoose").connection.readyState === 1;
+    res.json({ ok: true, dbConnected: dbReady, time: new Date().toISOString() });
 });
 // GET /experiences
 app.get("/experiences", async (_req, res) => {
