@@ -11,9 +11,23 @@ import { nextSequence } from "./models/Counter.js";
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
-const HOST = process.env.HOST || '127.0.0.1';
+const HOST = process.env.HOST || '0.0.0.0';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
-app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
+// Allow comma-separated origins or *
+const corsOptions = CORS_ORIGIN === '*'
+    ? { origin: true, credentials: true }
+    : {
+        origin: (origin, callback) => {
+            if (!origin)
+                return callback(null, true); // non-browser or same-origin
+            const allow = CORS_ORIGIN.split(',').map((s) => s.trim());
+            if (allow.includes(origin))
+                return callback(null, true);
+            return callback(new Error('Not allowed by CORS'));
+        },
+        credentials: true,
+    };
+app.use(cors(corsOptions));
 app.use(express.json());
 // Loosen Mongoose model typings to avoid generic overload incompatibilities in TS
 const ExperienceModel = Experience;
