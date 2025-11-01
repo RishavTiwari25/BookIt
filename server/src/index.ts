@@ -204,16 +204,17 @@ app.post("/bookings", async (req, res) => {
 });
 
 connectMongo().then(() => {
-  // Serve built client if available (production preview) from ../client/dist
-  try {
-    const clientDist = path.resolve(process.cwd(), "..", "client", "dist");
-    app.use(express.static(clientDist));
-    // SPA fallback: let client router handle non-API routes (include legacy /details/:id)
-    app.get(["/", "/experiences", "/experiences/:id", "/details/:id", "/checkout", "/booking-result"], (_req, res) => {
-      res.sendFile(path.join(clientDist, "index.html"));
-    });
-  } catch (e) {
-    // non-fatal if client build not present
+  // Serve client build only when running locally
+  if (process.env.NODE_ENV === "development") {
+    try {
+      const clientDist = path.resolve(process.cwd(), "..", "client", "dist");
+      app.use(express.static(clientDist));
+      app.get(["/", "/experiences", "/experiences/:id", "/details/:id", "/checkout", "/booking-result"], (_req, res) => {
+        res.sendFile(path.join(clientDist, "index.html"));
+      });
+    } catch (e) {
+      console.warn("Client build not found locally (ok in backend-only mode)");
+    }
   }
 
   app.listen(PORT, HOST as any, () => {
@@ -223,3 +224,4 @@ connectMongo().then(() => {
   console.error('Failed to connect to MongoDB:', e);
   process.exit(1);
 });
+
